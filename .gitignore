@@ -1,0 +1,7 @@
+# files
+*.exe
+
+# folders
+docs/*
+libs/*
+.vscode/*
