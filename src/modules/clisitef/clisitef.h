@@ -70,6 +70,8 @@ void recarregaClisitef(HMODULE *id);
 
 int configuraConexao(
     HMODULE id,
+    char *buffer,
+    size_t tamBuffer,
     char *IPSiTef,
     char *IdLoja,
     char *IdTerminal,
@@ -78,6 +80,8 @@ int configuraConexao(
 
 int iniciaTransacao(
     HMODULE id,
+    char *buffer,
+    size_t tamBuffer,
     int Funcao,
     char *Valor,
     char *CupomFiscal,
