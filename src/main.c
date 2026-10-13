@@ -58,5 +58,38 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    int *Comando;
+    long *TipoCampo;
+    short *TamMinimo;
+    short *TamMaximo;
+    char *Buffer;
+    int TamBuffer = sizeof(Buffer);
+    int Continua = 0;
+
+    int statusContinua = 10000;
+
+    while (statusContinua == 10000) {
+        statusContinua = continuaTransacao(
+            id,
+            &Comando,
+            &TipoCampo,
+            &TamMinimo,
+            &TamMaximo,
+            &Buffer,
+            TamBuffer,
+            Continua
+        );
+
+        switch (*Comando)
+        {
+        case 1:
+            /* code */
+            break;
+        
+        default:
+            break;
+        }
+    }
+
     return 0;
 }
