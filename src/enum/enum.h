@@ -20,6 +20,37 @@ typedef enum {
     FECHAMENTO = 999
 } Funcoes;
 
+typedef enum {
+    MSG_VISOR_OPERADOR = 1,
+    MSG_VISOR_CLIENTE = 2,
+    MSG_VISOR_AMBOS = 3,
+    TITULO_MENU = 4,
+    REMOVE_MSG_VISOR_OPERADOR = 11,
+    REMOVE_MSG_VISOR_CLIENTE = 12,
+    REMOVE_MSG_VISOR_AMBOS = 13,
+    REMOVE_TITULO_MENU = 14,
+    BUFFER_AGUARDA_REPOSTA = 20,
+    MENU_OPCOES = 21,
+    BUFFER_AGUARDA_CONFIRMACAO = 22,
+    JANELA_DE_INTERRUPCAO_DE_FLUXO = 23,
+    DEVE_COLETAR_TIPOCAMPO = 29,
+    DEVE_COLETAR_CAMPO = 30,
+    DEVE_COLETAR_VALOR_MONETARIO = 34,
+    DEVE_COLETAR_CAMPO_MASCARADO = 41,
+
+    /*
+15 Cabeçalho a ser apresentado pela aplicação. Refere-se a exibição de informações adicionais que 
+algumas transações necessitam mostrar na tela. 
+ 
+Um exemplo é a transação de  Empréstimo do Correspondente Bancário, que em certo ponto 
+precisa que sejam mostradas informações para o cliente detalhando o empréstimo que  está 
+sendo contratado (como Valor da parcela, vencimento, etc..). 
+
+16 Deve remover o cabeçalho apresentado pelo comando 15. 
+ 
+    */
+} Comandos;
+
 #endif
 
  /* 

@@ -56,20 +56,24 @@ typedef int(__stdcall *ObtemVersao)(
 
 typedef void(__stdcall *DescarregaMensagens)(void);
 
+typedef struct {
+    HMODULE dll;
+    ConfiguraIntSiTefInterativoEx configura;
+    IniciaFuncaoSiTefInterativo inicia;
+    ContinuaFuncaoSiTefInterativo continua;
+    FinalizaFuncaoSiTefInterativo finaliza;
+} CliSitef;
 
-/**
- * Abaixo definições das funções de cliclo de vida
- * da CliSitef na memoria.
- */
+int carrega_clisitef(CliSitef *clisitef);
 
-HMODULE carregaClisitef();
+void limpa_instancia_clisitef(CliSitef *clisitef);
 
-void liberaClisitef(HMODULE *id);
+void libera_clisitef(CliSitef *clisitef);
 
-void recarregaClisitef(HMODULE *id);
+void recarrega_clisitef(CliSitef *clisitef);
 
 int configuraConexao(
-    HMODULE id,
+    CliSitef *clisitef,
     char *buffer,
     size_t tamBuffer,
     char *IPSiTef,

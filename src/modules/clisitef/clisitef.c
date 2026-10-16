@@ -13,46 +13,80 @@
  *
  *  */
 
-HMODULE carregaClisitef()
-{
+int carrega_clisitef(CliSitef *clisitef) {
     logger('i', "Carregando a lib...");
 
-    HMODULE id = LoadLibraryA("libs/CliSiTef32I.dll");
+    if (clisitef == NULL) {
+        return 0;
+    }
 
-    if (id == NULL)
-    {
+    clisitef->dll = LoadLibraryA("libs/CliSiTef32I.dll");
+
+    if (clisitef->dll == NULL) {
         logger('e', "erro ao carregar a lib: %lu", GetLastError());
-        exit(EXIT_FAILURE);
+        return 0;
+    }
+
+    clisitef->configura =
+        (ConfiguraIntSiTefInterativoEx)GetProcAddress(clisitef->dll, "ConfiguraIntSiTefInterativoEx");
+    clisitef->inicia =
+        (IniciaFuncaoSiTefInterativo)GetProcAddress(clisitef->dll, "IniciaFuncaoSiTefInterativo");
+    clisitef->continua =
+        (ContinuaFuncaoSiTefInterativo)GetProcAddress(clisitef->dll, "ContinuaFuncaoSiTefInterativo");
+    clisitef->finaliza =
+        (FinalizaFuncaoSiTefInterativo)GetProcAddress(clisitef->dll, "FinalizaFuncaoSiTefInterativo");
+
+    if (
+        !clisitef->configura ||
+        !clisitef->inicia ||
+        !clisitef->continua ||
+        !clisitef->finaliza
+    ) {
+        logger('e', "uma ou mais funcoes nao foram encontradas na lib");
+        libera_clisitef(clisitef);
+        return 0;
     }
 
     logger('i', "Sucesso");
-    return id;
+    return 1;
 }
 
-void liberaClisitef(HMODULE *id)
-{
+void limpa_instancia_clisitef(CliSitef *clisitef) {
+    clisitef->dll = NULL;
+    clisitef->configura = NULL;
+    clisitef->inicia = NULL;
+    clisitef->continua = NULL;
+    clisitef->finaliza = NULL;
+
+    logger('d', "instancia clisitef limpa");
+} 
+
+void libera_clisitef(CliSitef *clisitef) {
     logger('i', "Liberando a lib...");
 
-    if (!FreeLibrary(*id))
-    {
+    if (!FreeLibrary(clisitef->dll)) {
         logger('e', "erro ao liberar a lib: %lu", GetLastError());
-        exit(EXIT_FAILURE);
+    } else {
+        limpa_instancia_clisitef(clisitef);
+        logger('i', "Sucesso");
     }
-
-    *id = NULL;
-
-    logger('i', "Sucesso");
 }
 
-void recarregaClisitef(HMODULE *id)
-{
-    liberaClisitef(id);
+void recarrega_clisitef(CliSitef *clisitef) {
+    libera_clisitef(clisitef);
+    carregaClisitef(clisitef);
+}
 
-    *id = carregaClisitef();
+int inicializa_sitef(CliSitef *clisitef) {
+    if (!carrega_clisitef(&clisitef)) {
+        return 0;
+    }
+
+    return 1;
 }
 
 int configuraConexao(
-    HMODULE id,
+    CliSitef *clisitef,
     char *buffer,
     size_t tamBuffer,
     char *IPSiTef,
@@ -62,11 +96,6 @@ int configuraConexao(
 )
 {
     logger('i', "iniciando conexao com sitef...");
-
-    if (id == NULL) {
-        snprintf(buffer, tamBuffer, "a referencia a DLL esta vazia");
-        return 1;
-    }
 
     if (IPSiTef == NULL) {
         snprintf(buffer, tamBuffer, "campo 'IPSitef' esta vazio");
@@ -85,10 +114,7 @@ int configuraConexao(
 
     logger('d', "Parametros: [%s - %s - %s - %s]", IPSiTef, IdLoja, IdTerminal, ParametrosAdicionais);
 
-    FARPROC funcAddr = GetProcAddress(id, "ConfiguraIntSiTefInterativoEx");
-    ConfiguraIntSiTefInterativoEx configura = (ConfiguraIntSiTefInterativoEx)funcAddr;
-
-    int response = configura(IPSiTef, IdLoja, IdTerminal, 0, ParametrosAdicionais);
+    int response = clisitef->configura(IPSiTef, IdLoja, IdTerminal, 0, ParametrosAdicionais);
 
     if (response != 0)
         snprintf(buffer, tamBuffer, "erro ao chamar a funcao configura: %s", getDescricaoErroConfigura(response));
@@ -112,8 +138,8 @@ int iniciaTransacao(
         return 1;
     }
 
-    if (strlen(CupomFiscal) != 14) {
-        snprintf(buffer, tamBuffer, "o cupomFiscal precisa ter 14 caracteres");
+    if (strlen(CupomFiscal) != 16) {
+        snprintf(buffer, tamBuffer, "o cupomFiscal precisa ter 16 caracteres");
         return 1;
     }
 
@@ -137,4 +163,26 @@ int iniciaTransacao(
         snprintf(buffer, tamBuffer, "erro ao chamar a funcao inicia: %s", getDescricaoErroInicia(response));
 
     return response;
+}
+
+int continuaTransacao(
+    HMODULE id,
+    int *Comando,
+    long *TipoCampo,
+    short *TamMinimo,
+    short *TamMaximo,
+    char *Buffer,
+    int TamBuffer,
+    int Continua
+) {
+    logger('i', "continua transacao...");
+
+    // logger(
+    //     'i',
+    //     "Parametros: [%d - %d - %d - %d - %s - %d - %d]", *Comando, TipoCampo, TamMinimo, TamMaximo, Buffer, TamBuffer, Continua);
+
+    FARPROC funcAddr = GetProcAddress(id, "ContinuaFuncaoSiTefInterativo");
+    ContinuaFuncaoSiTefInterativo continua = (ContinuaFuncaoSiTefInterativo)funcAddr;
+
+    return continua(Comando, TipoCampo, TamMinimo, TamMaximo, Buffer, TamBuffer, Continua);
 }

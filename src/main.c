@@ -38,31 +38,67 @@ void menu(HMODULE *id)
     }
 }
 
-int main()
+void printMenu(
+    int Comando,
+    long TipoCampo,
+    // short TamMinimo,
+    // short TamMaximo,
+    char *Buffer,
+    // int TamBuffer,
+    int Continua)
 {
-    HMODULE id = carregaClisitef();
+    printf("************************************************************\n");
+    printf("*                  MENU INTERACAO SITEF                    *\n");
+    printf("************************************************************\n");
+    printf("* Comando: %i                                              *\n", Comando);
+    printf("* TipoCampo: %lo                                           *\n", TipoCampo);
+    printf("* Buffer: %s                                               *\n", Buffer);
+    printf("* Continua: %d                                             *\n", Continua);
+    printf("************************************************************\n");
+}
+
+int main() {
+    CliSitef clisitef;
+
+    carrega_clisitef(&clisitef);
+
     char buffer[200];
 
-    int statusConexao = configuraConexao(id, buffer, sizeof(buffer), "127.0.0.1", "00000000", "00000001", "");
+    int statusConexao = configuraConexao(
+        &clisitef,
+        buffer,
+        sizeof(buffer),
+        "127.0.0.1",
+        "00000000",
+        "00000001",
+        ""
+    );
 
     if (statusConexao != 0) {
         logger('e', "%s", buffer);
         exit(EXIT_FAILURE);
     }
 
-
-    int statusInicia = iniciaTransacao(id, buffer, sizeof(buffer), DEBITO, "100", "2026101116281201", "");
+    int statusInicia = iniciaTransacao(
+        id,
+        buffer,
+        sizeof(buffer),
+        DEBITO,
+        "100",
+        "2026101116281201",
+        ""
+    );
 
     if (statusInicia != 0 && statusInicia != 10000) {
         logger('e', "%s", buffer);
         exit(EXIT_FAILURE);
     }
 
-    int *Comando;
-    long *TipoCampo;
-    short *TamMinimo;
-    short *TamMaximo;
-    char *Buffer;
+    int Comando = 0;
+    long TipoCampo = 0;
+    short TamMinimo = 0;
+    short TamMaximo = 0;
+    char Buffer[1024] = {0};
     int TamBuffer = sizeof(Buffer);
     int Continua = 0;
 
@@ -75,19 +111,24 @@ int main()
             &TipoCampo,
             &TamMinimo,
             &TamMaximo,
-            &Buffer,
+            Buffer,
             TamBuffer,
             Continua
         );
 
-        switch (*Comando)
-        {
-        case 1:
-            /* code */
-            break;
-        
-        default:
-            break;
+        // logger('i', "%s", printMenu(Comando, TipoCampo, Buffer, Continua));
+        printMenu(Comando, TipoCampo, Buffer, Continua);
+
+        switch (Comando) {
+            case MSG_VISOR_OPERADOR:
+            case MSG_VISOR_CLIENTE:
+            case MSG_VISOR_AMBOS:
+                printf("hello world");
+                /* code */
+                break;
+
+            default:
+                break;
         }
     }
 
