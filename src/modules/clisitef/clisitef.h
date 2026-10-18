@@ -74,30 +74,20 @@ void recarrega_clisitef(CliSitef *clisitef);
 
 int configura_conexao(
     CliSitef *clisitef,
-    char *IPSiTef,
-    char *IdLoja,
-    char *IdTerminal,
-    char *ParametrosAdicionais
+    char *ip_sitef,
+    char *id_loja,
+    char *id_terminal,
+    char *param_adic
 );
 
 int inicia_transacao(
     CliSitef *clisitef,
-    int Funcao,
-    char *Valor,
-    char *CupomFiscal,
-    char *ParamAdic
+    int funcao,
+    char *valor,
+    char *param_adic
 );
 
-int continua_transacao(
-    CliSitef *clisitef,
-    int *Comando,
-    long *TipoCampo,
-    short *TamMinimo,
-    short *TamMaximo,
-    char *Buffer,
-    int TamBuffer,
-    int Continua
-);
+int continua_transacao(CliSitef *clisitef);
 
 void finaliza_transacao(
     CliSitef *clisitef,

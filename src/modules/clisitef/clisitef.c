@@ -1,8 +1,10 @@
 #include <minwindef.h>
 #include <errhandlingapi.h>
 #include <string.h>
+#include <stdio.h>
 #include "clisitef.h"
 #include "../helpers/helpers.h"
+#include "../../enum/enum.h"
 
 
 int carrega_clisitef(CliSitef *clisitef) {
@@ -70,115 +72,126 @@ void recarrega_clisitef(CliSitef *clisitef) {
 
 int configura_conexao(
     CliSitef *clisitef,
-    char *IPSiTef,
-    char *IdLoja,
-    char *IdTerminal,
-    char *ParametrosAdicionais
+    char *ip_sitef,
+    char *id_loja,
+    char *id_terminal,
+    char *param_adic
 ) {
-    logger('i', "iniciando conexao com sitef...");
-
-    if (IPSiTef == NULL || strlen(IPSiTef) < 1) {
-        logger('e', "campo 'IPSitef' esta vazio");
+    if (ip_sitef == NULL || strlen(ip_sitef) < 1) {
+        logger('e', "campo 'ip_sitef' esta vazio");
         return -1;
     }
 
-    if (strlen(IdLoja) != 8) {
-        logger('e', "campo 'IdLoja' com tamanho incorreto");
+    if (strlen(id_loja) != 8) {
+        logger('e', "campo 'id_loja' com tamanho incorreto");
         return -1;
     }
 
-    if (strlen(IdTerminal) != 8) {
-        logger('e', "campo 'idTerminal' com tamanho incorreto");
+    if (strlen(id_terminal) != 8) {
+        logger('e', "campo 'id_terminal' com tamanho incorreto");
         return -1;
     }
 
     logger(
         'd',
-        "Params: [%s - %s - %s - %s]",
-        IPSiTef, IdLoja, IdTerminal, ParametrosAdicionais
+        "ip_sitef=[%s] id_loja=[%s] id_terminal=[%s] param_adic[%s]",
+        ip_sitef, id_loja, id_terminal, param_adic
     );
 
     int response = clisitef->configura(
-        IPSiTef,
-        IdLoja,
-        IdTerminal,
+        ip_sitef,
+        id_loja,
+        id_terminal,
         0,
-        ParametrosAdicionais
+        param_adic
     );
 
     if (response != 0)
-        logger('e', "erro configura: %s", getDescricaoErroConfigura(response));
+        logger('e', "erro configura: %s", get_descricao_erro_configura(response));
 
     return response;
 }
 
-int inicia_transacao(
-    CliSitef *clisitef,
-    int Funcao,
-    char *Valor,
-    char *CupomFiscal,
-    char *ParamAdic
-) {
-    logger('i', "iniciando transacao...");
+int inicia_transacao(CliSitef *clisitef, int funcao, char *valor, char *param_adic) {
+    char cupom_fiscal[17];
+    char data_fiscal[9];
+    char hora_fiscal[7];
 
-    if (strlen(CupomFiscal) != 16) {
-        logger('e', "o cupomFiscal precisa ter 16 caracteres");
-        return -1;
-    }
+    set_timestamp(cupom_fiscal, sizeof(cupom_fiscal), "%Y%m%d%H%M%S");
 
-    char DataFiscal[9];
-    char HoraFiscal[7];
-    memcpy(DataFiscal, CupomFiscal, 8);
-    memcpy(HoraFiscal, CupomFiscal + 8, 6);
-    DataFiscal[8] = '\0';
-    HoraFiscal[6] = '\0';
+    memcpy(data_fiscal, cupom_fiscal, 8);
+    memcpy(hora_fiscal, cupom_fiscal + 8, 6);
+    data_fiscal[8] = '\0';
+    hora_fiscal[6] = '\0';
 
     logger(
         'd',
-        "Params: [%d - %s - %s - %s - %s - %s - %s]",
-        Funcao, Valor, CupomFiscal, DataFiscal, HoraFiscal, "thaina", ParamAdic
+        "funcao=[%d] valor=[%s] cupom_fiscal=[%s] data_fiscal=[%s] hora_fiscal=[%s] param_adic=[%s]",
+        funcao, valor, cupom_fiscal, data_fiscal, hora_fiscal, param_adic
     );
 
     int response = clisitef->inicia(
-        Funcao,
-        Valor,
-        CupomFiscal,
-        DataFiscal,
-        HoraFiscal,
+        funcao,
+        valor,
+        cupom_fiscal,
+        data_fiscal,
+        hora_fiscal,
         "thaina",
-        ParamAdic
+        param_adic
     );
 
     if (response != 0 && response != 10000)
-        logger('e', "erro inicia: %s", getDescricaoErroInicia(response));
+        logger('e', "erro inicia: %s", get_descricao_erro_inicia(response));
 
     return response;
 }
 
-int continua_transacao(
-    CliSitef *clisitef,
-    int *Comando,
-    long *TipoCampo,
-    short *TamMinimo,
-    short *TamMaximo,
-    char *Buffer,
-    int TamBuffer,
-    int Continua
-) {
-    logger('i', "continua transacao...");
+int continua_transacao(CliSitef *clisitef) {
+    int comando = 0;
+    long tipo_campo = 0;
+    short tam_minimo = 0;
+    short tam_maximo = 0;
+    char buffer[1024] = {0};
+    int tam_buffer = sizeof(buffer);
+    int continua = 0;
+    int status_continua = 10000;
 
-    int response = clisitef->continua(
-        Comando,
-        TipoCampo,
-        TamMinimo,
-        TamMaximo,
-        Buffer,
-        TamBuffer,
-        Continua
-    );
+    while (status_continua == 10000) {
+        status_continua = clisitef->continua(
+            &comando,
+            &tipo_campo,
+            &tam_minimo,
+            &tam_maximo,
+            buffer,
+            tam_buffer,
+            continua    
+        );
 
-    if (response != 10000)
-        logger('e', "erro continua: %s", Buffer);
+        logger(
+            'd',
+            "comando=[%d] tipo_campo=[%ld] tam_minimo=[%d] tam_maximo=[%d] buffer=[%s] continua=[%d] status_continua=[%d]",
+            comando, tipo_campo, tam_minimo, tam_maximo, buffer, continua, status_continua
+        );
 
-    return response;
+        switch (comando) {
+            case MSG_VISOR_OPERADOR:
+            case MSG_VISOR_CLIENTE:
+            case MSG_VISOR_AMBOS:
+                break;
+
+            case TITULO_MENU:
+                break;
+
+            case BUFFER_AGUARDA_REPOSTA:
+                logger('i', "Digite 1(sim) e 2(nao): ");
+                scanf("%s", buffer);
+                break;
+
+            default:
+                //TODO: pensar...
+                break;
+        }
+    }
+
+    return status_continua;
 }

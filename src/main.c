@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "modules/clisitef/clisitef.h"
@@ -42,7 +41,7 @@ int main(int argc, char const *argv[]) {
     if (!carrega_clisitef(&clisitef))
         exit(EXIT_FAILURE);
 
-
+    logger('i', "iniciando conexao com sitef...");
     int status_configura = configura_conexao(
         &clisitef,
         ip_sitef,
@@ -56,11 +55,12 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    logger('i', "iniciando transacao...");
+
     int status_inicia = inicia_transacao(
         &clisitef,
         DEBITO,
         "100",
-        "2026101116281201",
         ""
     );
 
@@ -69,46 +69,10 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    int Comando = 0;
-    long TipoCampo = 0;
-    short TamMinimo = 0;
-    short TamMaximo = 0;
-    char Buffer[1024] = {0};
-    int TamBuffer = sizeof(Buffer);
-    int Continua = 0;
-    int status_continua = 10000;
-    char *Titulo = "";
+    logger('i', "continua transacao...");
 
-    while (status_continua == 10000) {
-        status_continua = continua_transacao(
-            &clisitef,
-            &Comando,
-            &TipoCampo,
-            &TamMinimo,
-            &TamMaximo,
-            Buffer,
-            TamBuffer,
-            Continua
-        );
-
-        print_menu(Titulo, Comando, TipoCampo, Buffer, Continua);
-
-        switch (Comando) {
-            case MSG_VISOR_OPERADOR:
-            case MSG_VISOR_CLIENTE:
-            case MSG_VISOR_AMBOS:
-                break;
-            case TITULO_MENU:
-                Titulo = Buffer;
-                break;
-            //TODO: pensar nos outros cases
-
-            default:
-                //TODO: pensar...
-                break;
-        }
-    }
-
+    int status_continua = continua_transacao(&clisitef);
     libera_clisitef(&clisitef);
-    return 0;
+
+    return status_continua;
 }
