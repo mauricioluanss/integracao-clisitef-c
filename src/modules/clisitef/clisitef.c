@@ -1,24 +1,15 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include <minwindef.h>
 #include <errhandlingapi.h>
 #include <string.h>
 #include "clisitef.h"
 #include "../helpers/helpers.h"
 
-/**
- *
- * Módulo que controla o ciclo de vida da DLL
- * CliSitef na memória, durante a execução do
- * programa.
- *
- *  */
 
 int carrega_clisitef(CliSitef *clisitef) {
     logger('i', "Carregando a lib...");
 
-    if (clisitef == NULL) {
+    if (clisitef == NULL)
         return 0;
-    }
 
     clisitef->dll = LoadLibraryA("libs/CliSiTef32I.dll");
 
@@ -74,58 +65,55 @@ void libera_clisitef(CliSitef *clisitef) {
 
 void recarrega_clisitef(CliSitef *clisitef) {
     libera_clisitef(clisitef);
-    carregaClisitef(clisitef);
+    carrega_clisitef(clisitef);
 }
 
-int inicializa_sitef(CliSitef *clisitef) {
-    if (!carrega_clisitef(&clisitef)) {
-        return 0;
-    }
-
-    return 1;
-}
-
-int configuraConexao(
+int configura_conexao(
     CliSitef *clisitef,
-    char *buffer,
-    size_t tamBuffer,
     char *IPSiTef,
     char *IdLoja,
     char *IdTerminal,
     char *ParametrosAdicionais
-)
-{
+) {
     logger('i', "iniciando conexao com sitef...");
 
-    if (IPSiTef == NULL) {
-        snprintf(buffer, tamBuffer, "campo 'IPSitef' esta vazio");
-        return 1;
+    if (IPSiTef == NULL || strlen(IPSiTef) < 1) {
+        logger('e', "campo 'IPSitef' esta vazio");
+        return -1;
     }
 
     if (strlen(IdLoja) != 8) {
-        snprintf(buffer, tamBuffer, "campo 'IdLoja' com tamanho incorreto");
-        return 1;
+        logger('e', "campo 'IdLoja' com tamanho incorreto");
+        return -1;
     }
 
     if (strlen(IdTerminal) != 8) {
-        snprintf(buffer, tamBuffer, "campo 'idTerminal' com tamanho incorreto");
-        return 1;
+        logger('e', "campo 'idTerminal' com tamanho incorreto");
+        return -1;
     }
 
-    logger('d', "Parametros: [%s - %s - %s - %s]", IPSiTef, IdLoja, IdTerminal, ParametrosAdicionais);
+    logger(
+        'd',
+        "Params: [%s - %s - %s - %s]",
+        IPSiTef, IdLoja, IdTerminal, ParametrosAdicionais
+    );
 
-    int response = clisitef->configura(IPSiTef, IdLoja, IdTerminal, 0, ParametrosAdicionais);
+    int response = clisitef->configura(
+        IPSiTef,
+        IdLoja,
+        IdTerminal,
+        0,
+        ParametrosAdicionais
+    );
 
     if (response != 0)
-        snprintf(buffer, tamBuffer, "erro ao chamar a funcao configura: %s", getDescricaoErroConfigura(response));
+        logger('e', "erro configura: %s", getDescricaoErroConfigura(response));
 
     return response;
 }
 
-int iniciaTransacao(
-    HMODULE id,
-    char *buffer,
-    size_t tamBuffer,
+int inicia_transacao(
+    CliSitef *clisitef,
     int Funcao,
     char *Valor,
     char *CupomFiscal,
@@ -133,40 +121,42 @@ int iniciaTransacao(
 ) {
     logger('i', "iniciando transacao...");
 
-    if (id == NULL) {
-        snprintf(buffer, tamBuffer, "a referencia a DLL esta vazia");
-        return 1;
-    }
-
     if (strlen(CupomFiscal) != 16) {
-        snprintf(buffer, tamBuffer, "o cupomFiscal precisa ter 16 caracteres");
-        return 1;
+        logger('e', "o cupomFiscal precisa ter 16 caracteres");
+        return -1;
     }
 
     char DataFiscal[9];
     char HoraFiscal[7];
-
     memcpy(DataFiscal, CupomFiscal, 8);
     memcpy(HoraFiscal, CupomFiscal + 8, 6);
-    
     DataFiscal[8] = '\0';
     HoraFiscal[6] = '\0';
 
-    logger('i', "Parametros: [%d - %s - %s - %s - %s - %s]", Funcao, Valor, CupomFiscal, DataFiscal, HoraFiscal, ParamAdic);
+    logger(
+        'd',
+        "Params: [%d - %s - %s - %s - %s - %s - %s]",
+        Funcao, Valor, CupomFiscal, DataFiscal, HoraFiscal, "thaina", ParamAdic
+    );
 
-    FARPROC funcAddr = GetProcAddress(id, "IniciaFuncaoSiTefInterativo");
-    IniciaFuncaoSiTefInterativo inicia = (IniciaFuncaoSiTefInterativo)funcAddr;
-
-    int response = inicia(Funcao, Valor, CupomFiscal, DataFiscal, HoraFiscal, "thaina", "");
+    int response = clisitef->inicia(
+        Funcao,
+        Valor,
+        CupomFiscal,
+        DataFiscal,
+        HoraFiscal,
+        "thaina",
+        ParamAdic
+    );
 
     if (response != 0 && response != 10000)
-        snprintf(buffer, tamBuffer, "erro ao chamar a funcao inicia: %s", getDescricaoErroInicia(response));
+        logger('e', "erro inicia: %s", getDescricaoErroInicia(response));
 
     return response;
 }
 
-int continuaTransacao(
-    HMODULE id,
+int continua_transacao(
+    CliSitef *clisitef,
     int *Comando,
     long *TipoCampo,
     short *TamMinimo,
@@ -177,12 +167,18 @@ int continuaTransacao(
 ) {
     logger('i', "continua transacao...");
 
-    // logger(
-    //     'i',
-    //     "Parametros: [%d - %d - %d - %d - %s - %d - %d]", *Comando, TipoCampo, TamMinimo, TamMaximo, Buffer, TamBuffer, Continua);
+    int response = clisitef->continua(
+        Comando,
+        TipoCampo,
+        TamMinimo,
+        TamMaximo,
+        Buffer,
+        TamBuffer,
+        Continua
+    );
 
-    FARPROC funcAddr = GetProcAddress(id, "ContinuaFuncaoSiTefInterativo");
-    ContinuaFuncaoSiTefInterativo continua = (ContinuaFuncaoSiTefInterativo)funcAddr;
+    if (response != 10000)
+        logger('e', "erro continua: %s", Buffer);
 
-    return continua(Comando, TipoCampo, TamMinimo, TamMaximo, Buffer, TamBuffer, Continua);
+    return response;
 }

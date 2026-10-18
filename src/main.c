@@ -1,96 +1,71 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "modules/clisitef/clisitef.h"
 #include "modules/helpers/helpers.h"
 #include "enum/enum.h"
 
-void menu(HMODULE *id)
-{
-    int option = 42;
 
-    while (option != 3)
-    {
-        printf("menu - clisitef\n");
-        printf("0 - carrega lib\n");
-        printf("1 - liberar lib\n");
-        printf("2 - recarregar lib\n");
-        printf("3 - sair\n");
-        printf("\nDigite a opcao: \n");
-        scanf("%d", &option);
-
-        switch (option)
-        {
-        case 0:
-            *id = carregaClisitef();
-            break;
-        case 1:
-            liberaClisitef(id);
-            break;
-        case 2:
-            recarregaClisitef(id);
-            break;
-        case 3:
-            break;
-        default:
-            printf("opcao invalida\n");
-            break;
-        }
-    }
+void set_args(
+    int argc,
+    char const *argv[],
+    char **ip_sitef,
+    char **id_loja,
+    char **id_terminal,
+    char **param_adic
+) {
+    if (argc > 1 && strlen(argv[1]) > 0) *ip_sitef = argv[1];
+    if (argc > 2 && strlen(argv[2]) > 0) *id_loja = argv[2];
+    if (argc > 3 && strlen(argv[3]) > 0) *id_terminal = argv[3];
+    if (argc > 4 && strlen(argv[4]) > 0) *param_adic = argv[4];
 }
 
-void printMenu(
-    int Comando,
-    long TipoCampo,
-    // short TamMinimo,
-    // short TamMaximo,
-    char *Buffer,
-    // int TamBuffer,
-    int Continua)
-{
-    printf("************************************************************\n");
-    printf("*                  MENU INTERACAO SITEF                    *\n");
-    printf("************************************************************\n");
-    printf("* Comando: %i                                              *\n", Comando);
-    printf("* TipoCampo: %lo                                           *\n", TipoCampo);
-    printf("* Buffer: %s                                               *\n", Buffer);
-    printf("* Continua: %d                                             *\n", Continua);
-    printf("************************************************************\n");
-}
-
-int main() {
+int main(int argc, char const *argv[]) {
     CliSitef clisitef;
+    
+    char *ip_sitef = "127.0.0.1";
+    char *id_loja = "00000000";
+    char *id_terminal = "00000001";
+    char *param_adic = "";
 
-    carrega_clisitef(&clisitef);
+    if (argc > 1) {
+        set_args(
+            argc,
+            argv,
+            &ip_sitef,
+            &id_loja,
+            &id_terminal,
+            &param_adic
+        );
+    }
 
-    char buffer[200];
+    if (!carrega_clisitef(&clisitef))
+        exit(EXIT_FAILURE);
 
-    int statusConexao = configuraConexao(
+
+    int status_configura = configura_conexao(
         &clisitef,
-        buffer,
-        sizeof(buffer),
-        "127.0.0.1",
-        "00000000",
-        "00000001",
-        ""
+        ip_sitef,
+        id_loja,
+        id_terminal,
+        param_adic
     );
 
-    if (statusConexao != 0) {
-        logger('e', "%s", buffer);
+    if (status_configura != 0) {
+        libera_clisitef(&clisitef);
         exit(EXIT_FAILURE);
     }
 
-    int statusInicia = iniciaTransacao(
-        id,
-        buffer,
-        sizeof(buffer),
+    int status_inicia = inicia_transacao(
+        &clisitef,
         DEBITO,
         "100",
         "2026101116281201",
         ""
     );
 
-    if (statusInicia != 0 && statusInicia != 10000) {
-        logger('e', "%s", buffer);
+    if (status_inicia != 0 && status_inicia != 10000) {
+        libera_clisitef(&clisitef);
         exit(EXIT_FAILURE);
     }
 
@@ -101,12 +76,12 @@ int main() {
     char Buffer[1024] = {0};
     int TamBuffer = sizeof(Buffer);
     int Continua = 0;
+    int status_continua = 10000;
+    char *Titulo = "";
 
-    int statusContinua = 10000;
-
-    while (statusContinua == 10000) {
-        statusContinua = continuaTransacao(
-            id,
+    while (status_continua == 10000) {
+        status_continua = continua_transacao(
+            &clisitef,
             &Comando,
             &TipoCampo,
             &TamMinimo,
@@ -116,21 +91,24 @@ int main() {
             Continua
         );
 
-        // logger('i', "%s", printMenu(Comando, TipoCampo, Buffer, Continua));
-        printMenu(Comando, TipoCampo, Buffer, Continua);
+        print_menu(Titulo, Comando, TipoCampo, Buffer, Continua);
 
         switch (Comando) {
             case MSG_VISOR_OPERADOR:
             case MSG_VISOR_CLIENTE:
             case MSG_VISOR_AMBOS:
-                printf("hello world");
-                /* code */
                 break;
+            case TITULO_MENU:
+                Titulo = Buffer;
+                break;
+            //TODO: pensar nos outros cases
 
             default:
+                //TODO: pensar...
                 break;
         }
     }
 
+    libera_clisitef(&clisitef);
     return 0;
 }

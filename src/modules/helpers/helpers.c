@@ -43,6 +43,17 @@ void setaTimestamp(char *buffer, size_t tamanhoDoBuffer)
     strftime(buffer, tamanhoDoBuffer, "%d/%m/%Y %H:%M:%S", timestampEstruturado);
 }
 
+void print_menu(char *Titulo, int Comando, long TipoCampo, char *Buffer, int Continua) {
+    printf("************************************************************\n");
+    printf("* %s                                                       *\n", Titulo);
+    printf("************************************************************\n");
+    printf("* Comando: %i                                              *\n", Comando);
+    printf("* TipoCampo: %lo                                           *\n", TipoCampo);
+    printf("* Buffer: %s                                               *\n", Buffer);
+    printf("* Continua: %d                                             *\n", Continua);
+    printf("************************************************************\n");
+}
+
 const char *getDescricaoErroConfigura(int status) {
     switch (status)
     {

@@ -1,0 +1,7 @@
+CompileFlags:
+  Compiler: C:/mingw32/bin/gcc.exe
+  Add:
+    - --target=i686-w64-mingw32
+    - -Wall
+    - -Wextra
+

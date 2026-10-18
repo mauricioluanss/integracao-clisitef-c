@@ -72,28 +72,24 @@ void libera_clisitef(CliSitef *clisitef);
 
 void recarrega_clisitef(CliSitef *clisitef);
 
-int configuraConexao(
+int configura_conexao(
     CliSitef *clisitef,
-    char *buffer,
-    size_t tamBuffer,
     char *IPSiTef,
     char *IdLoja,
     char *IdTerminal,
     char *ParametrosAdicionais
 );
 
-int iniciaTransacao(
-    HMODULE id,
-    char *buffer,
-    size_t tamBuffer,
+int inicia_transacao(
+    CliSitef *clisitef,
     int Funcao,
     char *Valor,
     char *CupomFiscal,
     char *ParamAdic
 );
 
-int continuaTransacao(
-    HMODULE id,
+int continua_transacao(
+    CliSitef *clisitef,
     int *Comando,
     long *TipoCampo,
     short *TamMinimo,
@@ -103,19 +99,19 @@ int continuaTransacao(
     int Continua
 );
 
-void finalizaTransacao(
-    HMODULE id,
+void finaliza_transacao(
+    CliSitef *clisitef,
     short Confirma,
     char *CupomFiscal,
     char *ParamAdic
 );
 
-int getTransacoesPendentes(
-    HMODULE id,
+int get_transacoes_pendentes(
+    CliSitef *clisitef,
     char *CupomFiscal
 );
 
-int getVersaoClisitef(HMODULE id);
+int get_versao_clisitef(HMODULE id);
 
 void flush(void);
 
